@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://umldd13usavp"]
+
+[ext_resource type="Script" uid="uid://br3mpncb55p1l" path="res://lobby_screen.gd" id="1_xbj4x"]
+
+[node name="LobbyScreen" type="Window" unique_id=1669277546]
+oversampling_override = 1.0
+initial_position = 5
+size = Vector2i(300, 400)
+script = ExtResource("1_xbj4x")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=760648939]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="PlayerListContainer" type="VBoxContainer" parent="VBoxContainer" unique_id=2055739076]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ButtonContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1956491519]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="StartGameButton" type="Button" parent="VBoxContainer/ButtonContainer" unique_id=710123895]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start game"
+
+[node name="QuitButton" type="Button" parent="VBoxContainer/ButtonContainer" unique_id=532715433]
+layout_mode = 2
+text = "Quit"
+
+[node name="ConnectionStatusLabel" type="Label" parent="VBoxContainer" unique_id=938765818]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+autowrap_mode = 2
+
+[connection signal="pressed" from="VBoxContainer/ButtonContainer/StartGameButton" to="." method="_on_start_game_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButtonContainer/QuitButton" to="." method="_on_quit_button_pressed"]

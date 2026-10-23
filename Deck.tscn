@@ -1,0 +1,89 @@
+[gd_scene format=3 uid="uid://dhdx14kd0dlpa"]
+
+[ext_resource type="Script" uid="uid://df5bpghvy8g3c" path="res://deck.gd" id="1_kjdvm"]
+[ext_resource type="Shader" uid="uid://dfe6mtq0vcaf6" path="res://greyscale.gdshader" id="2_4nk3w"]
+[ext_resource type="Texture2D" uid="uid://dm8nt736qrc2f" path="res://icon.svg" id="3_pcnjo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_epwy8"]
+bg_color = Color(0.103743516, 0.10374353, 0.103743516, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_epwy8"]
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_t8xav"]
+material = SubResource("StandardMaterial3D_epwy8")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4hggl"]
+shader = ExtResource("2_4nk3w")
+shader_parameter/enabled = false
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_t8xav"]
+
+[node name="Deck" type="Node2D" unique_id=438029191]
+script = ExtResource("1_kjdvm")
+
+[node name="DeckOutline" type="Panel" parent="." unique_id=1890826143]
+unique_name_in_owner = true
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_epwy8")
+
+[node name="DeckBG" type="MeshInstance2D" parent="." unique_id=1256607261]
+unique_name_in_owner = true
+mesh = SubResource("QuadMesh_t8xav")
+
+[node name="Sprite" type="Sprite2D" parent="." unique_id=1658622354]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_4hggl")
+texture = ExtResource("3_pcnjo")
+
+[node name="HitboxArea" type="Area2D" parent="." unique_id=1660011258]
+unique_name_in_owner = true
+
+[node name="HitboxShape" type="CollisionShape2D" parent="HitboxArea" unique_id=167971336]
+unique_name_in_owner = true
+shape = SubResource("RectangleShape2D_t8xav")
+
+[node name="DeckInteractUI" type="HBoxContainer" parent="." unique_id=1754925117]
+unique_name_in_owner = true
+visible = false
+offset_right = 316.0
+offset_bottom = 40.0
+focus_behavior_recursive = 1
+theme_override_constants/separation = 11
+
+[node name="DrawButton" type="Button" parent="DeckInteractUI" unique_id=1575107609]
+layout_mode = 2
+text = "Draw"
+
+[node name="ShuffleButton" type="Button" parent="DeckInteractUI" unique_id=343097512]
+layout_mode = 2
+text = "Shuffle"
+
+[node name="RevealButton" type="Button" parent="DeckInteractUI" unique_id=2039471636]
+layout_mode = 2
+text = "Reveal
+"
+
+[node name="InspectButton" type="Button" parent="DeckInteractUI" unique_id=1668223714]
+layout_mode = 2
+text = "Inspect"
+
+[node name="FlipButton" type="Button" parent="DeckInteractUI" unique_id=1929708099]
+layout_mode = 2
+text = "Flip"
+
+[node name="CardsLeftLabel" type="Label" parent="." unique_id=669537642]
+unique_name_in_owner = true
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Placeholder"
+
+[connection signal="area_entered" from="HitboxArea" to="." method="_on_hitbox_area_area_entered"]
+[connection signal="area_exited" from="HitboxArea" to="." method="_on_hitbox_area_area_exited"]
+[connection signal="mouse_entered" from="HitboxArea" to="." method="_on_hitbox_area_mouse_entered"]
+[connection signal="pressed" from="DeckInteractUI/DrawButton" to="." method="draw_top_card"]
+[connection signal="pressed" from="DeckInteractUI/ShuffleButton" to="." method="shuffle_deck"]
+[connection signal="pressed" from="DeckInteractUI/RevealButton" to="." method="reveal_top_card"]
+[connection signal="pressed" from="DeckInteractUI/InspectButton" to="." method="open_deck_inspector"]
+[connection signal="pressed" from="DeckInteractUI/FlipButton" to="." method="_on_flip_button_pressed"]

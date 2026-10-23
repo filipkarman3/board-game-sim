@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://6y6wiu6hycvw"]
+
+[ext_resource type="Script" uid="uid://cc6dp4i4yl61n" path="res://game_menu.gd" id="1_jm1x4"]
+[ext_resource type="PackedScene" uid="uid://dxs1hvahsjbry" path="res://MultiSelect.tscn" id="1_rtg43"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t8xav"]
+bg_color = Color(0.21568628, 0.21568628, 0.21568628, 0.7019608)
+
+[node name="GameMenu" type="CanvasLayer" unique_id=409963108]
+script = ExtResource("1_jm1x4")
+
+[node name="Background" type="Panel" parent="." unique_id=216590577]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_t8xav")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=691775125]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -66.0
+offset_top = -11.5
+offset_right = 66.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="MultiSelect" parent="VBoxContainer" unique_id=1399605875 instance=ExtResource("1_rtg43")]
+layout_mode = 2
+
+[node name="ExitButton" type="Button" parent="VBoxContainer" unique_id=610538405]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Close Menu"
+
+[connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_exit_button_pressed"]

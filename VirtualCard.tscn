@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://2npryns431vi"]
+
+[ext_resource type="Script" uid="uid://cs5aoaggus2lg" path="res://virtual_card.gd" id="1_wqfn8"]
+
+[node name="VirtualCard" type="Sprite2D" unique_id=1178166922]
+script = ExtResource("1_wqfn8")

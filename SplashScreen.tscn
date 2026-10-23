@@ -1,0 +1,96 @@
+[gd_scene format=3 uid="uid://50n1yb60kkyc"]
+
+[ext_resource type="Script" uid="uid://484bt60p7tkc" path="res://splash_screen.gd" id="1_xe5an"]
+[ext_resource type="Script" uid="uid://bou7vvg7msbj1" path="res://asset_folder_file_dialog.gd" id="2_8lrbv"]
+
+[node name="SplashScreen" type="Window" unique_id=2005523388]
+oversampling_override = 1.0
+initial_position = 5
+size = Vector2i(300, 400)
+script = ExtResource("1_xe5an")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=540380414]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Form" type="VBoxContainer" parent="VBoxContainer" unique_id=398677262]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/Form" unique_id=1332697548]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Form/HBoxContainer" unique_id=2028262573]
+layout_mode = 2
+text = "IP:"
+
+[node name="IPLineEdit" type="LineEdit" parent="VBoxContainer/Form/HBoxContainer" unique_id=946852551]
+unique_name_in_owner = true
+layout_mode = 2
+text = "127.0.0.1"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/Form" unique_id=1356169046]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Form/HBoxContainer2" unique_id=361752727]
+layout_mode = 2
+text = "Port:"
+
+[node name="PortLineEdit" type="LineEdit" parent="VBoxContainer/Form/HBoxContainer2" unique_id=1944213690]
+unique_name_in_owner = true
+layout_mode = 2
+text = "25565"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="VBoxContainer/Form" unique_id=1087261267]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Form/HBoxContainer3" unique_id=1691159797]
+layout_mode = 2
+text = "Username:"
+
+[node name="UsernameLineEdit" type="LineEdit" parent="VBoxContainer/Form/HBoxContainer3" unique_id=375724288]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="VBoxContainer/Form" unique_id=1568625355]
+layout_mode = 2
+
+[node name="HostButton" type="Button" parent="VBoxContainer/Form/HBoxContainer4" unique_id=880139076]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Host"
+
+[node name="JoinButton" type="Button" parent="VBoxContainer/Form/HBoxContainer4" unique_id=321966124]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Join
+"
+
+[node name="ErrorMessage" type="Label" parent="VBoxContainer" unique_id=1626611721]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ConnectionErrorMessage" type="Label" parent="VBoxContainer" unique_id=353305949]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="FileDialog" type="FileDialog" parent="." unique_id=572785253]
+unique_name_in_owner = true
+oversampling_override = 1.0
+title = "Open a File"
+initial_position = 5
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.bgsid")
+script = ExtResource("2_8lrbv")
+
+[connection signal="text_changed" from="VBoxContainer/Form/HBoxContainer/IPLineEdit" to="." method="_on_ip_line_edit_text_changed"]
+[connection signal="text_changed" from="VBoxContainer/Form/HBoxContainer2/PortLineEdit" to="." method="_on_port_line_edit_text_changed"]
+[connection signal="text_changed" from="VBoxContainer/Form/HBoxContainer3/UsernameLineEdit" to="." method="_on_username_line_edit_text_changed"]
+[connection signal="pressed" from="VBoxContainer/Form/HBoxContainer4/HostButton" to="." method="_on_host_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/Form/HBoxContainer4/JoinButton" to="." method="_on_join_button_pressed"]
+[connection signal="canceled" from="FileDialog" to="FileDialog" method="_on_canceled"]
+[connection signal="close_requested" from="FileDialog" to="FileDialog" method="_on_close_requested"]
+[connection signal="file_selected" from="FileDialog" to="FileDialog" method="_on_file_selected"]

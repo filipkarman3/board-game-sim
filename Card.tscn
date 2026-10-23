@@ -1,0 +1,128 @@
+[gd_scene format=3 uid="uid://b0jf4pvnertrc"]
+
+[ext_resource type="Script" uid="uid://wkiylcgrke8m" path="res://card.gd" id="1_dd2wi"]
+[ext_resource type="Shader" uid="uid://dfe6mtq0vcaf6" path="res://greyscale.gdshader" id="2_21rx5"]
+[ext_resource type="Texture2D" uid="uid://dm8nt736qrc2f" path="res://icon.svg" id="2_hael8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_epwy8"]
+resource_local_to_scene = true
+bg_color = Color(0.20013264, 0.61692727, 0.9868091, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_t8xav"]
+shader = ExtResource("2_21rx5")
+shader_parameter/enabled = false
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_epwy8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t8xav"]
+bg_color = Color(0.1764706, 0.1764706, 0.1764706, 0.61960787)
+
+[node name="Card" type="Node2D" unique_id=1802248583]
+script = ExtResource("1_dd2wi")
+
+[node name="CardOutline" type="Panel" parent="." unique_id=396092975]
+unique_name_in_owner = true
+visible = false
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_epwy8")
+
+[node name="Front" type="Sprite2D" parent="." unique_id=1984972421]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_t8xav")
+texture = ExtResource("2_hael8")
+
+[node name="Back" type="Sprite2D" parent="." unique_id=675971255]
+unique_name_in_owner = true
+texture = ExtResource("2_hael8")
+
+[node name="CardInteractUI" type="HBoxContainer" parent="." unique_id=113329084]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_behavior_recursive = 1
+
+[node name="FlipButton" type="Button" parent="CardInteractUI" unique_id=505721267]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Flip"
+
+[node name="HandButton" type="Button" parent="CardInteractUI" unique_id=1694269257]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Add to hand"
+
+[node name="HitboxArea" type="Area2D" parent="." unique_id=439697141]
+unique_name_in_owner = true
+
+[node name="HitboxShape" type="CollisionShape2D" parent="HitboxArea" unique_id=1534900825]
+unique_name_in_owner = true
+shape = SubResource("RectangleShape2D_epwy8")
+
+[node name="InsertIntoDeckMenu" type="CanvasLayer" parent="." unique_id=940439824]
+unique_name_in_owner = true
+visible = false
+
+[node name="Background" type="Panel" parent="InsertIntoDeckMenu" unique_id=379562038]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_t8xav")
+
+[node name="Buttons" type="VBoxContainer" parent="InsertIntoDeckMenu" unique_id=406953476]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DeckTop" type="Button" parent="InsertIntoDeckMenu/Buttons" unique_id=285271826]
+layout_mode = 2
+text = "Insert card at deck top"
+
+[node name="DeckBottom" type="Button" parent="InsertIntoDeckMenu/Buttons" unique_id=1817837160]
+layout_mode = 2
+text = "Insert card at deck bottom"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="InsertIntoDeckMenu/Buttons" unique_id=1576661111]
+layout_mode = 2
+
+[node name="DeckSpecified" type="Button" parent="InsertIntoDeckMenu/Buttons/HBoxContainer" unique_id=2052059755]
+layout_mode = 2
+text = "Insert card at specified index"
+
+[node name="InsertIndexSpinbox" type="SpinBox" parent="InsertIntoDeckMenu/Buttons/HBoxContainer" unique_id=1248396128]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DeckCancel" type="Button" parent="InsertIntoDeckMenu/Buttons" unique_id=860327141]
+layout_mode = 2
+text = "Cancel"
+
+[connection signal="pressed" from="CardInteractUI/FlipButton" to="." method="_on_flip_button_pressed"]
+[connection signal="pressed" from="CardInteractUI/HandButton" to="." method="change_hand"]
+[connection signal="area_entered" from="HitboxArea" to="." method="_on_card_area_area_entered"]
+[connection signal="area_exited" from="HitboxArea" to="." method="_on_card_area_area_exited"]
+[connection signal="pressed" from="InsertIntoDeckMenu/Buttons/DeckTop" to="." method="_on_deck_top_pressed"]
+[connection signal="pressed" from="InsertIntoDeckMenu/Buttons/DeckBottom" to="." method="_on_deck_bottom_pressed"]
+[connection signal="pressed" from="InsertIntoDeckMenu/Buttons/HBoxContainer/DeckSpecified" to="." method="_on_deck_specified_pressed"]
+[connection signal="pressed" from="InsertIntoDeckMenu/Buttons/DeckCancel" to="." method="close_deck_menu"]

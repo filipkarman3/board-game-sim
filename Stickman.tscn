@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://dvc4pb15xijqf"]
+
+[ext_resource type="Script" uid="uid://c1fmg41e7n6lq" path="res://stickman.gd" id="1_k8ow3"]
+
+[node name="Stickman" type="Line2D" unique_id=1704978228]
+width = 3.0
+script = ExtResource("1_k8ow3")

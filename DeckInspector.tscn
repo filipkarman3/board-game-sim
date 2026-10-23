@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://di6djm2pywayv"]
+
+[ext_resource type="Script" uid="uid://hff874htu360" path="res://deck_inspector.gd" id="1_8e22r"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ybwus"]
+bg_color = Color(0.1764706, 0.1764706, 0.1764706, 0.61960787)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8e22r"]
+bg_color = Color(0.12156863, 0.6, 0.6, 1)
+
+[node name="DeckInspector" type="CanvasLayer" unique_id=691061044]
+script = ExtResource("1_8e22r")
+
+[node name="Background" type="Panel" parent="." unique_id=896813050]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ybwus")
+
+[node name="CardOutline" type="Panel" parent="." unique_id=1307862115]
+unique_name_in_owner = true
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_8e22r")
+
+[node name="CardContainer" type="Node2D" parent="." unique_id=1458203769]
+unique_name_in_owner = true
+
+[node name="Buttons" type="HBoxContainer" parent="." unique_id=1223042749]
+unique_name_in_owner = true
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="SelectButton" type="Button" parent="Buttons" unique_id=723789199]
+layout_mode = 2
+text = "Draw selected card"
+
+[node name="ExitButton" type="Button" parent="Buttons" unique_id=13096281]
+layout_mode = 2
+text = "Stop inspecting"
+
+[connection signal="pressed" from="Buttons/SelectButton" to="." method="_on_draw_button_pressed"]
+[connection signal="pressed" from="Buttons/ExitButton" to="." method="_on_close_button_pressed"]

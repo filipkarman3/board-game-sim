@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://bbkiupqduvkw2"]
+
+[ext_resource type="PackedScene" uid="uid://50n1yb60kkyc" path="res://SplashScreen.tscn" id="1_uu6xs"]
+
+[node name="Main" type="Node" unique_id=1021416593]
+
+[node name="SplashScreen" parent="." unique_id=2005523388 instance=ExtResource("1_uu6xs")]
