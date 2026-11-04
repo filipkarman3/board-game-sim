@@ -10,17 +10,32 @@ json file contents:
 
 const SCENE = preload("res://Card.tscn")
 
-static func create(path: String) -> Card:
-	var card : Card = SCENE.instantiate()
-	card.path = path
-	card.json = Helper.json_starter(card, path)
+static func create_from_info(path: String, data: Dictionary) -> Card:
+	data['path'] = path
+	var c: Card = SyncManager.spawn('Card', Helper.get_main(), SCENE, data)
+	Helper.add_network_object(c)
+	return c
+
+func _network_spawn(data: Dictionary) -> void:
+	self.path = data['path']
+	self.json = Helper.json_starter(self, path)
 	
-	card.front_sprite_texture = Helper.get_texture(Helper.get_full_path(card.json['front']))
-	card.back_sprite_texture = Helper.get_texture(Helper.get_full_path(card.json['back']))
-	if not card.front_sprite_texture.get_size().is_equal_approx(card.back_sprite_texture.get_size()):
+	self.front_sprite_texture = Helper.get_texture_from_path(Helper.get_full_path(self.json['front']))
+	self.back_sprite_texture = Helper.get_texture_from_path(Helper.get_full_path(self.json['back']))
+	if not self.front_sprite_texture.get_size().is_equal_approx(self.back_sprite_texture.get_size()):
 		assert(false, "Card (%s) front and back textures must be of same width and height" % path)
 	
-	return card
+	self.flip_card(data.get('is_face_up', false))
+	self.global_position = data.get('global_position', self.global_position)
+
+	front_sprite.texture = front_sprite_texture
+	back_sprite.texture  = back_sprite_texture
+	self.card_interact_ui.position.y = -self.get_card_size().y/2 -self.card_interact_ui.get_minimum_size().y -10
+	self.hitbox_shape.shape.size = self.get_card_size()
+	
+	var border_thickness: float = 5
+	self.outline.position = -self.get_card_size()/2-Vector2(BORDER_THICKNESS,BORDER_THICKNESS)
+	self.outline.size = self.get_card_size()+Vector2(BORDER_THICKNESS*2,BORDER_THICKNESS*2)
 
 @onready var front_sprite: Sprite2D = %Front
 @onready var back_sprite: Sprite2D = %Back
@@ -33,6 +48,8 @@ static func create(path: String) -> Card:
 @onready var hand_button: Button = %HandButton
 @onready var flip_button: Button = %FlipButton
 
+const BORDER_THICKNESS: float = 5
+
 var path : String
 var json : Variant
 var front_sprite_texture : ImageTexture
@@ -42,16 +59,6 @@ var insert_deck : Deck
 var pre_move_pos : Vector2
 var hand: Player
 var flipped: bool
-
-func _ready() -> void:
-	front_sprite.texture = front_sprite_texture
-	back_sprite.texture  = back_sprite_texture
-	self.card_interact_ui.position.y = -self.get_card_size().y/2 -self.card_interact_ui.get_minimum_size().y -10
-	self.hitbox_shape.shape.size = self.get_card_size()
-	
-	var border_thickness: float = 5
-	self.outline.position = -self.get_card_size()/2-Vector2(border_thickness,border_thickness)
-	self.outline.size = self.get_card_size()+Vector2(border_thickness*2,border_thickness*2)
 
 func get_card_size() -> Vector2:
 	return front_sprite_texture.get_size()
@@ -175,10 +182,10 @@ func _on_deck_specified_pressed() -> void:
 	self.insert_into_deck(self.insert_index_spinbox.value)
 
 func insert_into_deck(insert_index: int) -> void:
-	self.insert_deck.insert_card(Card.create(self.path), insert_index)
+	self.insert_deck.insert_card(CardInfo.create(self.path), insert_index)
 	CollisionHelper.unblock(self.insert_deck)
 	CollisionHelper.end_collision(self.lock, self)
-	self.queue_free()
+	SyncManager.despawn(self)
 
 func close_deck_menu() -> void:
 	self.insert_into_deck_menu.visible = false

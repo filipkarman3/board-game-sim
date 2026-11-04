@@ -19,7 +19,7 @@ shader_parameter/enabled = false
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_t8xav"]
 
-[node name="Deck" type="Node2D" unique_id=438029191]
+[node name="Deck" type="Node2D" unique_id=438029191 groups=["network_sync"]]
 script = ExtResource("1_kjdvm")
 
 [node name="DeckOutline" type="Panel" parent="." unique_id=1890826143]
@@ -60,11 +60,6 @@ text = "Draw"
 layout_mode = 2
 text = "Shuffle"
 
-[node name="RevealButton" type="Button" parent="DeckInteractUI" unique_id=2039471636]
-layout_mode = 2
-text = "Reveal
-"
-
 [node name="InspectButton" type="Button" parent="DeckInteractUI" unique_id=1668223714]
 layout_mode = 2
 text = "Inspect"
@@ -79,11 +74,13 @@ offset_right = 40.0
 offset_bottom = 23.0
 text = "Placeholder"
 
+[node name="CardContainer" type="Node2D" parent="." unique_id=726381068]
+unique_name_in_owner = true
+
 [connection signal="area_entered" from="HitboxArea" to="." method="_on_hitbox_area_area_entered"]
 [connection signal="area_exited" from="HitboxArea" to="." method="_on_hitbox_area_area_exited"]
 [connection signal="mouse_entered" from="HitboxArea" to="." method="_on_hitbox_area_mouse_entered"]
 [connection signal="pressed" from="DeckInteractUI/DrawButton" to="." method="draw_top_card"]
 [connection signal="pressed" from="DeckInteractUI/ShuffleButton" to="." method="shuffle_deck"]
-[connection signal="pressed" from="DeckInteractUI/RevealButton" to="." method="reveal_top_card"]
 [connection signal="pressed" from="DeckInteractUI/InspectButton" to="." method="open_deck_inspector"]
 [connection signal="pressed" from="DeckInteractUI/FlipButton" to="." method="_on_flip_button_pressed"]

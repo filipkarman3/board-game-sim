@@ -17,10 +17,10 @@ shader_parameter/enabled = false
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t8xav"]
 bg_color = Color(0.1764706, 0.1764706, 0.1764706, 0.61960787)
 
-[node name="Card" type="Node2D" unique_id=1802248583]
+[node name="Card" type="Node2D" unique_id=1802248583 groups=["network_sync"]]
 script = ExtResource("1_dd2wi")
 
-[node name="CardOutline" type="Panel" parent="." unique_id=396092975]
+[node name="CardOutline" type="Panel" parent="." unique_id=396092975 groups=["network_sync"]]
 unique_name_in_owner = true
 visible = false
 offset_right = 40.0

@@ -139,8 +139,11 @@ func _on_sync_manager_sync_regained() -> void:
 func start_game() -> void:
 	# allows clients to sync up
 	await get_tree().create_timer(2.0).timeout
-	_start_game.rpc()
+	#_start_game.rpc()
+	SyncManager.start()
 
+"""
 @rpc("call_local")
 func _start_game() -> void:
 	SyncManager.start()
+"""

@@ -12,7 +12,7 @@ func _on_file_selected(fname: String) -> void:
 		
 	Helper.asset_dir = fname.get_base_dir()
 	Helper.bgsid = fname.get_file()
-	
+	Helper.load_assets()
 	Helper.splash_screen.start_connecting()
 
 func _on_close_requested() -> void:

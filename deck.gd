@@ -20,14 +20,32 @@ json file contents:
 
 const SCENE = preload("res://Deck.tscn")
 
-static func create(parent: Node, path: String) -> Deck:
-	var deck : Deck = SCENE.instantiate()
-	deck.path = path
-	deck.json = Helper.json_starter(deck, path)
-	Helper.set_position(deck, deck.json)
-	parent.add_child(deck)
-	
+static func create(path: String, online:bool=true) -> Deck:
+	var deck : Deck = SyncManager.spawn('Deck', Helper.get_main(), SCENE, {
+		'path': path,
+	})
+	Helper.add_network_object(deck)
 	return deck
+
+func _network_spawn(data: Dictionary) -> void:
+	self.path = data['path']
+	self.ready()
+
+static func create_offline(path: String) -> Deck:
+	var d: Deck = SCENE.instantiate()
+	Helper.get_main().add_child(d)
+	Helper.add_network_object(d)
+	d.path = path
+	d.ready()
+	return d
+
+func ready() -> void:
+	self.json = Helper.json_starter(self, self.path)
+	Helper.set_position(self, self.json)
+	self.load_cards(self.json)
+	self.cards_left_label.visible = self.json.get('show_number_of_cards_left', true)
+	self.recalculate_position()
+
 
 @onready var hitbox_shape: CollisionShape2D = %HitboxShape
 @onready var hitbox_area: Area2D = %HitboxArea
@@ -36,17 +54,17 @@ static func create(parent: Node, path: String) -> Deck:
 @onready var deck_bg: MeshInstance2D = %DeckBG
 @onready var cards_left_label: Label = %CardsLeftLabel
 @onready var deck_outline: Panel = %DeckOutline
+@onready var card_container: Node2D = %CardContainer
+
+var network_commands := TwoWay.from_dict({
+		0: _draw_specific_card
+	})
 
 var path : String
 var json : Variant
 var lock : Player
-var cards : Array[Card] = []
+var cards : Array[CardInfo] = []
 var are_cards_face_up : bool = false
-
-func _ready() -> void:
-	self.load_cards(self.json)
-	self.cards_left_label.visible = self.json.get('show_number_of_cards_left', true)
-	self.recalculate_position()
 
 func get_card_size() -> Vector2:
 	return self.hitbox_shape.shape.size
@@ -62,7 +80,7 @@ func load_cards(json) -> Deck:
 	var card_size : Vector2
 	for card_path in json["cards"]:
 		for i in json["cards"][card_path]:
-			var card := Card.create(Helper.get_full_path(card_path))
+			var card := CardInfo.create(Helper.get_full_path(card_path))
 			cards.append(card)
 			if not card_size:
 				card_size = card.get_card_size()
@@ -200,14 +218,6 @@ func draw_top_card() -> void:
 func shuffle_deck() -> void:
 	cards.shuffle()
 
-func reveal_top_card() -> void:
-	if self.cards.is_empty():
-		return
-	
-	var card : Card = cards.pop_at(0)
-	Helper.get_main().add_child(card)
-	card.global_position = self.global_position + Vector2(self.get_card_size().x, 0)
-
 func open_deck_inspector() -> void:
 	self.lock.set_inspecting_deck(true)
 	#revoke ability to press other buttons - this is automatically done by the canvaslayer
@@ -215,12 +225,40 @@ func open_deck_inspector() -> void:
 		Helper.get_main().add_child(DeckInspector.create(self))
 
 func draw_specific_card(i: int) -> void:
-	var drawn_card : Card = self.cards.pop_at(i)
+	self.lock.set_input([
+		Helper.get_network_obj_id(self),
+		self.network_commands.get_id(_draw_specific_card),
+		[i]])
+
+func _draw_specific_card(i: int) -> void:
+	var ci : CardInfo = self.cards.pop_at(i)
 	self.update_num_cards_left_ui()
-	Helper.get_main().add_child(drawn_card)
-	drawn_card.global_position = self.global_position
-	drawn_card.global_position.x += 20 + self.get_card_size().x
-	drawn_card.flip_card(self.are_cards_face_up)
+	var drawn_card: Card = Card.create_from_info(ci.path, {
+		'global_position': self.global_position + Vector2(20+self.get_card_size().x,0),
+		'is_face_up': self.are_cards_face_up,
+	})
+
+func _save_state() -> Dictionary:
+	return {
+		'cards': self.cards.map(func(c): return c.path),
+		'lock': self.lock.name if is_instance_valid(self.lock) else null
+	}
+
+func _load_state(state: Dictionary) -> void:
+	self.cards = []
+	for c_path in state.get('cards', []):
+		self.cards.append(CardInfo.create(path))
+	
+	var p_name: String = state.get('lock', null)
+	if p_name == null:
+		self.lock = null
+	else:
+		self.lock = Helper.players[p_name]
+	
+	self.update_sprite_texture()
+
+func run_command(f_id: int, args: Array) -> void:
+	self.network_commands.get_obj(f_id).callv(args)
 
 func on_deck_inspector_closed() -> void:
 	self.lock.set_inspecting_deck(false)
@@ -229,7 +267,7 @@ func _physics_process(delta: float) -> void:
 	if self.is_moving_deck:
 		self.global_position = get_viewport().get_mouse_position()
 
-func insert_card(c: Card, i: int) -> void:
+func insert_card(c: CardInfo, i: int) -> void:
 	self.cards.insert(i, c)
 	self.update_num_cards_left_ui()
 
