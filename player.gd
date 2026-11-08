@@ -5,6 +5,7 @@ class_name Player extends Node2D
 
 const SPEED := 5.0
 const PLAYER_SCENE := preload("res://Player.tscn")
+const PLAYER_RADIUS := 35.0
 
 var can_move := true
 
@@ -51,15 +52,17 @@ func _network_process(input: Dictionary) -> void:
 func _save_state() -> Dictionary:
 	return {
 			'position': self.position,
-			'can_move': self.can_move
+			'can_move': self.can_move,
+			'inspecting_deck': self.eye.visible
 		}
 
 func _load_state(state: Dictionary) -> void:
-	self.position = state['position']
-	self.can_move = state['can_move']
+	self.position = state.get('position', self.position)
+	self.can_move = state.get('can_move', self.can_move)
+	self.set_inspecting_deck(state.get('inspecting_deck', self.eye.visible))
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 35, Color(0,0,0,0.4))
+	draw_circle(Vector2.ZERO, PLAYER_RADIUS, Color(0,0,0,0.4))
 
 func _on_tree_exited() -> void:
 	Helper.remove_player(self)

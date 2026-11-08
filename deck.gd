@@ -21,7 +21,7 @@ json file contents:
 const SCENE = preload("res://Deck.tscn")
 
 static func create(_path: String, _online:bool=true) -> Deck:
-	var deck : Deck = SyncManager.spawn('Deck', Helper.get_main(), SCENE, {
+	var deck : Deck = SyncManager.spawn('Deck', Helper.get_main().deck_parent, SCENE, {
 		'path': _path,
 	})
 	Helper.add_network_object(deck)
@@ -33,7 +33,7 @@ func _network_spawn(data: Dictionary) -> void:
 
 static func create_offline(_path: String) -> Deck:
 	var d: Deck = SCENE.instantiate()
-	Helper.get_main().add_child(d)
+	Helper.get_main().deck_parent.add_child(d)
 	Helper.add_network_object(d)
 	d.path = _path
 	d.ready()
@@ -46,9 +46,6 @@ func ready() -> void:
 	self.cards_left_label.visible = self.json.get('show_number_of_cards_left', true)
 	self.recalculate_position()
 
-
-@onready var hitbox_shape: CollisionShape2D = %HitboxShape
-@onready var hitbox_area: Area2D = %HitboxArea
 @onready var sprite: Sprite2D = %Sprite
 @onready var deck_interact_ui: HBoxContainer = %DeckInteractUI
 @onready var deck_bg: MeshInstance2D = %DeckBG
@@ -60,7 +57,11 @@ var network_commands := TwoWay.from_dict({
 		0: _draw_specific_card,
 		1: net_start_moving,
 		2: net_set_global_position,
-		3: net_end_move
+		3: net_end_move,
+		4: net_open_deck_inspector,
+		5: net_on_deck_inspector_closed,
+		6: net_shuffle_deck,
+		7: net_flip_cards
 	})
 
 var path : String
@@ -68,33 +69,42 @@ var json : Variant
 var lock : Player
 var cards : Array[CardInfo] = []
 var are_cards_face_up : bool = false
+var card_size : Vector2
+var lock_locked : bool = false
 
 func get_card_size() -> Vector2:
-	return self.hitbox_shape.shape.size
+	return self.card_size
 
 func set_card_size(size: Vector2) -> Deck:
-	self.hitbox_shape.shape.size = size
+	self.card_size = size
 	return self
+
+func get_rect() -> Rect2:
+	return Rect2(self.global_position-self.get_card_size()/2, self.get_card_size())
+
+func get_player_rect() -> Rect2:
+	var r := self.get_rect()
+	return r.grow(Player.PLAYER_RADIUS)
 
 func load_cards(_json) -> Deck:
 	if "cards" not in _json:
 		assert(false, "Attempted to create deck %s but no card information was found in the json file" % self.path)
 		
-	var card_size : Vector2
+	var _card_size : Vector2
 	for card_path in _json["cards"]:
 		for i in _json["cards"][card_path]:
 			var card := CardInfo.create(card_path)
 			cards.append(card)
-			if not card_size:
-				card_size = card.get_card_size()
-			if not card_size.is_equal_approx(card.get_card_size()):
-				assert(false, 'Attempting to load card (path: %s) with size (%f,%f) into a deck of size (%f,%f)' % [card_path, card.get_card_size().x, card.get_card_size().y, card_size.x, card_size.y])
+			if not _card_size:
+				_card_size = card.get_card_size()
+			if not _card_size.is_equal_approx(card.get_card_size()):
+				assert(false, 'Attempting to load card (path: %s) with size (%f,%f) into a deck of size (%f,%f)' % [card_path, card.get_card_size().x, card.get_card_size().y, _card_size.x, _card_size.y])
 	
-	self.deck_interact_ui.position.y = -card_size.y/2 -self.deck_interact_ui.get_minimum_size().y -10
-	self.deck_bg.mesh.size = card_size
+	self.deck_interact_ui.position.y = -_card_size.y/2 -self.deck_interact_ui.get_minimum_size().y -10
+	self.deck_bg.mesh.size = _card_size
 	
 	self.update_sprite_texture()
-	return self.set_card_size(card_size)
+	return self.set_card_size(_card_size)
 
 func update_sprite_texture() -> void:
 	if self.cards.is_empty():
@@ -112,11 +122,6 @@ func update_sprite_texture() -> void:
 		self.deck_outline.size = (self.get_card_size() +
 			Vector2(outline_border_thickness*2,outline_border_thickness*2))
 
-func _on_hitbox_area_area_entered(area: Area2D) -> void:
-	var obj = area.get_owner()
-	if obj is Player and not is_instance_valid(self.lock):
-		self.set_lock(obj)
-
 func _update_ui_on_lock_change() -> void:
 	if Helper.is_own_player(lock):
 		sprite.set_instance_shader_parameter("enabled", false)
@@ -127,12 +132,6 @@ func _update_ui_on_lock_change() -> void:
 	else:
 		sprite.set_instance_shader_parameter("enabled", false)
 		deck_interact_ui.hide()
-
-func _on_hitbox_area_area_exited(area: Area2D) -> void:
-	var obj = area.get_owner()
-	if obj is Player:
-		if not (obj==self.lock and self.is_moving_deck):
-			self.set_lock(null)
 
 func set_lock(p: Player) -> void:
 	self.lock = p
@@ -152,18 +151,12 @@ func handle_deck_move(event: InputEvent) -> void:
 
 func net_end_move() -> void:
 	self.is_moving_deck = false
+	self.set_lock_locked(false)
 	recalculate_position()
-	if not self.is_colliding_with_lock():
-		self.set_lock(null)
 
 func net_start_moving() -> void:
 	self.is_moving_deck = true
-
-func is_colliding_with_lock() -> bool:
-	for area in self.hitbox_area.get_overlapping_areas():
-		if area.get_owner() == self.lock:
-			return true
-	return false
+	self.set_lock_locked(true)
 
 func can_move_deck(event: InputEvent) -> bool:
 	return (event is InputEventMouseButton
@@ -180,10 +173,7 @@ func stopped_moving_deck(event: InputEvent) -> bool:
 		and is_moving_deck)
 
 func is_mouse_over() -> bool:
-	var hitbox_pos: Vector2 = self.hitbox_shape.global_position
-	var hitbox_size: Vector2 = self.get_card_size()
-	var hitbox_rect: Rect2 = Rect2(hitbox_pos-hitbox_size/2.0,hitbox_size)
-	return hitbox_rect.has_point(get_viewport().get_mouse_position())
+	return self.get_rect().has_point(get_viewport().get_mouse_position())
 
 func recalculate_position() -> void:
 	# make sure the centre of the sprite is on-screen
@@ -222,13 +212,23 @@ func draw_top_card() -> void:
 	self.draw_specific_card(0)
 
 func shuffle_deck() -> void:
-	cards.shuffle()
+	self.set_network_command(net_shuffle_deck, [])
+
+func net_shuffle_deck() -> void:
+	var rng: NetworkRandomNumberGenerator = Helper.get_main().rng
+	for i in range(cards.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp = cards[i]
+		cards[i] = cards[j]
+		cards[j] = tmp
 
 func open_deck_inspector() -> void:
-	self.lock.set_inspecting_deck(true)
-	#revoke ability to press other buttons - this is automatically done by the canvaslayer
+	self.set_network_command(net_open_deck_inspector, [])
 	if Helper.is_own_player(self.lock):
 		Helper.get_main().add_child(DeckInspector.create(self))
+
+func net_open_deck_inspector() -> void:
+	self.lock.set_inspecting_deck(true)
 
 func draw_specific_card(i: int) -> void:
 	self.set_network_command(_draw_specific_card, [i])
@@ -251,13 +251,15 @@ func _draw_specific_card(i: int) -> void:
 func _save_state() -> Dictionary:
 	var card_paths = self.cards.map(func(c): return c.path)
 	if null in card_paths:
-		var a = 1
+		var _a = 1
 	
 	return {
 		'cards': card_paths,
 		'lock': self.lock.name if is_instance_valid(self.lock) else '',
 		'is_moving': self.is_moving_deck,
-		'global_position': self.global_position
+		'lock_locked': self.lock_locked,
+		'global_position': self.global_position,
+		'are_cards_face_up': self.are_cards_face_up
 	}
 
 func _load_state(state: Dictionary) -> void:
@@ -271,8 +273,10 @@ func _load_state(state: Dictionary) -> void:
 	else:
 		self.lock = Helper.players[p_name]
 	
-	self.is_moving_deck = state.get('is_moving', false)
+	self.is_moving_deck = state.get('is_moving', self.is_moving_deck)
+	self.lock_locked = state.get('lock_locked', self.lock_locked)
 	self.global_position = state.get('global_position', self.global_position)
+	self.are_cards_face_up = state.get('are_cards_face_up', self.are_cards_face_up)
 	
 	self.update_sprite_texture()
 
@@ -280,6 +284,9 @@ func run_command(f_id: int, args: Array) -> void:
 	self.network_commands.get_obj(f_id).callv(args)
 
 func on_deck_inspector_closed() -> void:
+	self.set_network_command(net_on_deck_inspector_closed, [])
+
+func net_on_deck_inspector_closed() -> void:
 	self.lock.set_inspecting_deck(false)
 
 func _physics_process(_delta: float) -> void:
@@ -296,5 +303,32 @@ func insert_card(c: CardInfo, i: int) -> void:
 	self.update_num_cards_left_ui()
 
 func _on_flip_button_pressed() -> void:
+	self.set_network_command(net_flip_cards, [])
+
+func net_flip_cards() -> void:
 	self.are_cards_face_up = not self.are_cards_face_up
 	self.update_sprite_texture()
+
+func update_lock() -> void:
+	if self.lock_locked: return
+	
+	var rect := self.get_player_rect()
+	# lock is still colliding with deck
+	if is_instance_valid(self.lock) and rect.has_point(lock.position): return
+	
+	# try and find new lock if old one not colliding with deck anymore
+	for p in Helper.get_players_sorted():
+		if rect.has_point(p.position):
+			self.set_lock(p)
+			return
+	
+	# no player is colliding with deck
+	self.set_lock(null)
+
+func _network_process(_inp: Dictionary) -> void:
+	self.update_lock()
+
+func set_lock_locked(b: bool) -> void:
+	self.lock_locked = b
+	if not b:
+		self.update_lock()

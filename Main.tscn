@@ -1,7 +1,18 @@
 [gd_scene format=3 uid="uid://bbkiupqduvkw2"]
 
+[ext_resource type="Script" uid="uid://cb8rqh3ngnkcy" path="res://main.gd" id="1_r0du0"]
 [ext_resource type="PackedScene" uid="uid://50n1yb60kkyc" path="res://SplashScreen.tscn" id="1_uu6xs"]
+[ext_resource type="Script" uid="uid://ni6erlux3qgi" path="res://addons/godot-rollback-netcode/NetworkRandomNumberGenerator.gd" id="3_r0du0"]
 
 [node name="Main" type="Node" unique_id=1021416593]
+script = ExtResource("1_r0du0")
 
 [node name="SplashScreen" parent="." unique_id=2005523388 instance=ExtResource("1_uu6xs")]
+
+[node name="DeckParent" type="Node2D" parent="." unique_id=1027510695]
+unique_name_in_owner = true
+
+[node name="Rng" type="Node" parent="." unique_id=338728929]
+unique_name_in_owner = true
+script = ExtResource("3_r0du0")
+metadata/_custom_type_script = "uid://ni6erlux3qgi"

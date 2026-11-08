@@ -12,8 +12,6 @@ bg_color = Color(0.20013264, 0.61692727, 0.9868091, 1)
 shader = ExtResource("2_21rx5")
 shader_parameter/enabled = false
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_epwy8"]
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t8xav"]
 bg_color = Color(0.1764706, 0.1764706, 0.1764706, 0.61960787)
 
@@ -62,13 +60,6 @@ text = "Flip"
 unique_name_in_owner = true
 layout_mode = 2
 text = "Add to hand"
-
-[node name="HitboxArea" type="Area2D" parent="." unique_id=439697141]
-unique_name_in_owner = true
-
-[node name="HitboxShape" type="CollisionShape2D" parent="HitboxArea" unique_id=1534900825]
-unique_name_in_owner = true
-shape = SubResource("RectangleShape2D_epwy8")
 
 [node name="InsertIntoDeckMenu" type="CanvasLayer" parent="." unique_id=940439824]
 unique_name_in_owner = true
@@ -120,8 +111,6 @@ text = "Cancel"
 
 [connection signal="pressed" from="CardInteractUI/FlipButton" to="." method="_on_flip_button_pressed"]
 [connection signal="pressed" from="CardInteractUI/HandButton" to="." method="change_hand"]
-[connection signal="area_entered" from="HitboxArea" to="." method="_on_card_area_area_entered"]
-[connection signal="area_exited" from="HitboxArea" to="." method="_on_card_area_area_exited"]
 [connection signal="pressed" from="InsertIntoDeckMenu/Buttons/DeckTop" to="." method="_on_deck_top_pressed"]
 [connection signal="pressed" from="InsertIntoDeckMenu/Buttons/DeckBottom" to="." method="_on_deck_bottom_pressed"]
 [connection signal="pressed" from="InsertIntoDeckMenu/Buttons/HBoxContainer/DeckSpecified" to="." method="_on_deck_specified_pressed"]

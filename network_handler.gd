@@ -35,6 +35,7 @@ func start_server(port: int) -> void:
 			Helper.colour,
 			Helper.bgsid
 		).to_dictionary())
+	Helper.get_main().rng.randomize()
 
 @rpc('call_local')
 func add_player(player_data_dict: Dictionary) -> void:
@@ -78,13 +79,14 @@ func on_new_peer_server(player_data_dict: Dictionary) -> void:
 	elif player_data.bgsid != Helper.bgsid:
 		_close_connection.rpc_id(player_data.network_id, "Wrong bgsid. Need: %s" % Helper.bgsid)
 		return
-	add_players.rpc_id(player_data.network_id, _serialise_players())
+	add_players.rpc_id(player_data.network_id, _serialise_players(), Helper.get_main().rng.get_seed())
 	add_player.rpc(player_data.to_dictionary())
 
 @rpc
-func add_players(ps: Dictionary[int, Dictionary]) -> void:
+func add_players(ps: Dictionary[int, Dictionary], seed) -> void:
 	for p in ps.values():
 		add_player(p)
+	Helper.get_main().rng.set_seed(seed)
 
 func _serialise_players() -> Dictionary[int, Dictionary]:
 	var sd : Dictionary[int, Dictionary] = {}

@@ -8,6 +8,7 @@ var colour : Color
 var bgsid : String
 var asset_dir : String
 var players : Dictionary[String, Player]
+var sorted_players : Array[Player]
 
 # z-index guide - TODO implement the below consts
 const CARD_Z : int = 1
@@ -46,12 +47,20 @@ static func is_own_player_hitbox(hitbox: Area3D) -> bool:
 	return Helper.is_own_player(hitbox.get_owner())
 
 func is_own_player(node: Node) -> bool:
-	return node is Player and node.get_multiplayer_authority() == multiplayer.multiplayer_peer.get_unique_id()
+	return is_instance_valid(node) and node is Player and node.get_multiplayer_authority() == multiplayer.multiplayer_peer.get_unique_id()
 
 func start_game() -> void:
 	var main_node := Helper.get_main()
 	var gm : GameMenu = GameMenu.create()
 	main_node.add_child(gm)
+	self.sort_players()
+
+func sort_players() -> void:
+	self.sorted_players = []
+	for p in players.values():
+		var p_: Player = p
+		self.sorted_players.append(p_)
+	self.sorted_players.sort_custom(func(a,b): return a.name>b.name)
 
 func get_main() -> Node:
 	return get_tree().root.get_node("Main")
@@ -139,3 +148,12 @@ func get_network_obj_id(obj: Variant) -> int:
 
 func get_network_obj_by_id(id: int) -> Variant:
 	return network_object_tracker.get_obj(id)
+
+func get_players_sorted() -> Array:
+	return self.sorted_players
+
+func get_overlapping_deck(r: Rect2, card_lock: Player) -> Deck:
+	for d in Helper.get_main().deck_parent.get_children():
+		if (d.lock==null or d.lock==card_lock) and r.intersects(d.get_rect()):
+			return d
+	return null

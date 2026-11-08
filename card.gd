@@ -31,7 +31,6 @@ func _network_spawn(data: Dictionary) -> void:
 	front_sprite.texture = front_sprite_texture
 	back_sprite.texture  = back_sprite_texture
 	self.card_interact_ui.position.y = -self.get_card_size().y/2 -self.card_interact_ui.get_minimum_size().y -10
-	self.hitbox_shape.shape.size = self.get_card_size()
 	
 	self.outline.position = -self.get_card_size()/2-Vector2(BORDER_THICKNESS,BORDER_THICKNESS)
 	self.outline.size = self.get_card_size()+Vector2(BORDER_THICKNESS*2,BORDER_THICKNESS*2)
@@ -39,8 +38,6 @@ func _network_spawn(data: Dictionary) -> void:
 @onready var front_sprite: Sprite2D = %Front
 @onready var back_sprite: Sprite2D = %Back
 @onready var card_interact_ui: HBoxContainer = %CardInteractUI
-@onready var hitbox_shape: CollisionShape2D = %HitboxShape
-@onready var hitbox_area: Area2D = %HitboxArea
 @onready var insert_into_deck_menu: CanvasLayer = %InsertIntoDeckMenu
 @onready var insert_index_spinbox: SpinBox = %InsertIndexSpinbox
 @onready var outline: Panel = %CardOutline
@@ -54,7 +51,9 @@ var network_commands := TwoWay.from_dict({
 		1: net_set_global_position,
 		2: net_end_move,
 		3: flip_card,
-		4: net_insert_into_deck
+		4: net_insert_into_deck,
+		5: net_close_deck_menu,
+		6: net_change_hand
 	})
 
 var path : String
@@ -65,33 +64,30 @@ var lock : Player
 var insert_deck : Deck
 var hand: Player
 var flipped: bool
+var lock_locked : bool = false
+var is_face_up : bool = false
 
 func get_card_size() -> Vector2:
 	return front_sprite_texture.get_size()
 
 func _on_flip_button_pressed() -> void:
-	self.set_network_command(flip_card, [not front_sprite.visible])
+	self.set_network_command(flip_card, [not self.is_face_up])
 
 func flip_card(toggle: bool) -> void:
-	front_sprite.visible = toggle
-	back_sprite.visible = not toggle
-
-func _on_card_area_area_entered(area: Area2D) -> void:
-	var obj = area.get_owner()
-	if obj is Player and not is_instance_valid(self.lock):
-		self.set_lock(obj)
-
-func _on_card_area_area_exited(area: Area2D) -> void:
-	var obj = area.get_owner()
-	if obj is Player and self.lock==obj and not self.is_moving:
-		self.set_lock(null)
+	self.is_face_up = toggle
+	if is_instance_valid(self.hand):
+		if Helper.is_own_player(self.hand):
+			front_sprite.visible = true
+			back_sprite.visible = false
+		else:
+			front_sprite.visible = false
+			back_sprite.visible = true
+	else:
+		front_sprite.visible = toggle
+		back_sprite.visible = not toggle
 
 func set_lock(p: Player) -> void:
 	self.lock = p
-	_update_ui_on_lock_change()
-
-func detach_player_connection() -> void:
-	self.lock = null
 	_update_ui_on_lock_change()
 
 func _update_ui_on_lock_change() -> void:
@@ -122,13 +118,24 @@ func handle_move(event: InputEvent) -> void:
 
 func net_start_moving() -> void:
 	self.is_moving = true
+	self.set_lock_locked(true)
 
 func net_end_move() -> void:
 	recalculate_position()
 	self.is_moving = false
-	var exists_overlapped_deck: bool = self.overlapping_deck()
-	if not self.is_colliding_with_lock() and not exists_overlapped_deck:
-		self.set_lock(null)
+	var overlapping_deck = Helper.get_overlapping_deck(self.get_rect(), self.lock)
+	if is_instance_valid(overlapping_deck):
+		self.insert_deck = overlapping_deck
+		# self.lock might not be actually colliding with overlapping_deck
+		# lock_locked prevents the deck from reassigning a lock as a result
+		overlapping_deck.set_lock_locked(true)
+		overlapping_deck.set_lock(self.lock)
+		if Helper.is_own_player(self.lock):
+			self.insert_index_spinbox.min_value = 0
+			self.insert_index_spinbox.max_value = self.insert_deck.cards.size()-1
+			self.insert_into_deck_menu.visible = true
+	else:
+		self.set_lock_locked(false)
 
 func set_network_command(f: Callable, args: Array) -> void:
 	if not self.lock: assert(false, 'Attempted to set network info for a nonexistent player')
@@ -136,12 +143,6 @@ func set_network_command(f: Callable, args: Array) -> void:
 		Helper.get_network_obj_id(self),
 		self.network_commands.get_id(f),
 		args])
-
-func is_colliding_with_lock() -> bool:
-	for area in self.hitbox_area.get_overlapping_areas():
-		if area.get_owner() == self.lock:
-			return true
-	return false
 
 func can_move(event: InputEvent) -> bool:
 	return (event is InputEventMouseButton
@@ -158,10 +159,7 @@ func stopped_moving(event: InputEvent) -> bool:
 		and is_moving)
 
 func is_mouse_over() -> bool:
-	var hitbox_pos: Vector2 = self.hitbox_shape.global_position
-	var hitbox_size: Vector2 = self.get_card_size()
-	var hitbox_rect: Rect2 = Rect2(hitbox_pos-hitbox_size/2.0,hitbox_size)
-	return hitbox_rect.has_point(get_viewport().get_mouse_position())
+	return self.get_rect().has_point(get_viewport().get_mouse_position())
 
 func recalculate_position() -> void:
 	# make sure the centre of the sprite is on-screen
@@ -185,7 +183,6 @@ func recalculate_position() -> void:
 
 func _physics_process(_delta: float) -> void:
 	if self.is_moving and Helper.is_own_player(self.lock):
-		self.global_position = get_viewport().get_mouse_position()
 		self.set_network_command(
 			net_set_global_position,
 			[get_viewport().get_mouse_position()])
@@ -203,6 +200,8 @@ func _on_deck_specified_pressed() -> void:
 	self.insert_into_deck(self.insert_index_spinbox.value)
 
 func insert_into_deck(insert_index: int) -> void:
+	self.close_deck_menu()
+	# this one has to come second because it frees this card object
 	self.set_network_command(net_insert_into_deck, [insert_index])
 
 func net_insert_into_deck(insert_index: int) -> void:
@@ -210,47 +209,35 @@ func net_insert_into_deck(insert_index: int) -> void:
 	SyncManager.despawn(self)
 
 func close_deck_menu() -> void:
-	self.insert_into_deck_menu.visible = false
-	if not self.is_colliding_with_lock():
-		self.set_lock(null)
+	self.set_network_command(net_close_deck_menu, [])
 
-func overlapping_deck() -> bool:
-	var found_new_deck: bool = false
-	for area in self.hitbox_area.get_overlapping_areas():
-		var possible_deck = area.get_owner()
-		if possible_deck is Deck and not is_instance_valid(possible_deck.lock):
-				self.insert_deck = possible_deck
-				found_new_deck = true
-				break
-	
-	if not found_new_deck: return false
-	
-	if Helper.is_own_player(self.lock):
-		self.insert_index_spinbox.min_value = 0
-		self.insert_index_spinbox.max_value = self.insert_deck.cards.size()-1
-		self.insert_into_deck_menu.visible = true
-	
-	return true
+func net_close_deck_menu() -> void:
+	self.insert_into_deck_menu.visible = false
+	self.insert_deck.set_lock_locked(false)
+	self.set_lock_locked(false)
 
 func change_hand() -> void:
-	if is_instance_valid(self.hand):
-		self.hand = null
+	self.set_network_command(net_change_hand, [])
+
+func net_change_hand() -> void:
+	self.set_hand(null if is_instance_valid(self.hand) else self.lock)
+
+func update_change_hand_btn() -> void:
+	if self.hand==null:
 		self.outline.visible = false
 		self.flip_button.visible = true
 		self.hand_button.text = 'Add to hand'
 		self.hand_button.visible = true
 		self.flip_card(false)
 	else:
-		self.hand = self.lock
 		self.outline.visible = true
 		self.change_outline_colour(self.hand.stickman.default_color)
 		self.flip_button.visible = false
 		if Helper.is_own_player(self.hand):
 			self.hand_button.text = 'Remove from hand'
-			self.flip_card(true)
 		else:
 			self.hand_button.visible = false
-			self.flip_card(false)
+		self.flip_card(false)
 
 func change_outline_colour(c: Color) -> void:
 	var style : StyleBoxFlat = self.outline.get_theme_stylebox('panel')
@@ -261,8 +248,10 @@ func _save_state() -> Dictionary:
 	return {
 		'lock': self.lock.name if is_instance_valid(self.lock) else '',
 		'is_moving': self.is_moving,
+		'lock_locked': self.lock_locked,
 		'global_position': self.global_position,
-		'is_face_up': self.front_sprite.visible
+		'is_face_up': self.is_face_up,
+		'hand': self.hand.name if is_instance_valid(self.hand) else ''
 	}
 
 func _load_state(state: Dictionary) -> void:
@@ -272,25 +261,52 @@ func _load_state(state: Dictionary) -> void:
 	else:
 		self.set_lock(Helper.players[p_name])
 	
-	self.is_moving = state.get('is_moving', false)
+	self.is_moving = state.get('is_moving', self.is_moving)
+	self.lock_locked = state.get('lock_locked', self.lock_locked)
 	self.global_position = state.get('global_position', self.global_position)
-	self.flip_card(state.get('is_face_up', self.front_sprite.visible))
+	self.flip_card(state.get('is_face_up', self.is_face_up))
+	
+	var h_name: String = state.get('hand', '')
+	if h_name == '':
+		self.set_hand(null)
+	else:
+		self.set_hand(Helper.players[h_name])
+
+func set_hand(p: Player) -> void:
+	self.hand = p
+	self.update_change_hand_btn()
 
 func run_command(f_id: int, args: Array) -> void:
 	self.network_commands.get_obj(f_id).callv(args)
 
-"""
 func _network_process(_input: Dictionary) -> void:
-	_update_lock()
+	self.update_lock()
 
-func _update_lock() -> void:
-	if self.is_moving: return
-	var rect := Rect2(global_position - get_card_size() / 2.0, get_card_size())
-	if is_instance_valid(self.lock) and rect.grow(PLAYER_RADIUS).has_point(lock.position):
-		return  # still held
-	lock = null
-	for p in Helper.get_players_sorted():   # fixed order, e.g. sorted by authority ID
-		if rect.grow(PLAYER_RADIUS).has_point(p.position):
-			lock = p
-			break
-"""
+func update_lock() -> void:
+	if self.lock_locked: return
+	
+	var rect := self.get_player_rect()
+	# lock is still colliding with card
+	if is_instance_valid(self.lock) and rect.has_point(lock.position): return
+	
+	# try and find new lock if old one not colliding with card anymore
+	for p in Helper.get_players_sorted():
+		if rect.has_point(p.position):
+			self.set_lock(p)
+			return
+	
+	# no player is colliding with card
+	self.set_lock(null)
+
+func get_rect() -> Rect2:
+	return Rect2(self.global_position-self.get_card_size()/2, self.get_card_size())
+
+func get_player_rect() -> Rect2:
+	var r := self.get_rect()
+	return r.grow(Player.PLAYER_RADIUS)
+
+
+func set_lock_locked(b: bool) -> void:
+	self.lock_locked = b
+	if not b:
+		self.update_lock()
