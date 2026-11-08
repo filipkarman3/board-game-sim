@@ -11,15 +11,15 @@ func _ready() -> void:
 	else:
 		connection_status_label.text = "Waiting for host to start game..."
 	
-func add_player(name: String, colour: Color) -> void:
+func add_player(_name: String, colour: Color) -> void:
 	var player_label = Label.new()
-	player_label.text = name
+	player_label.text = _name
 	player_label.add_theme_color_override("font_color", colour)
 	player_list_container.add_child(player_label)
 
-func remove_player(name: String) -> void:
+func remove_player(_name: String) -> void:
 	for c in player_list_container.get_children():
-		if c.text==name:
+		if c.text==_name:
 			c.queue_free()
 
 func update_connection_status(msg: String) -> void:

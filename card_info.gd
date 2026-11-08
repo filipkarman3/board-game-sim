@@ -1,14 +1,14 @@
 class_name CardInfo
 
-static func create(path: String) -> CardInfo:
+static func create(_path: String) -> CardInfo:
 	var c: CardInfo = CardInfo.new()
 	
-	c.path = path
-	c.json = Helper.json_starter(c, path)
-	c.front_sprite_texture = Helper.get_texture_from_path(Helper.get_full_path(c.json['front']))
-	c.back_sprite_texture = Helper.get_texture_from_path(Helper.get_full_path(c.json['back']))
+	c.path = _path
+	c.json = Helper.json_starter(Helper.get_full_path(_path))
+	c.front_sprite_texture = Helper.get_texture(c.json['front'])
+	c.back_sprite_texture = Helper.get_texture(c.json['back'])
 	if not c.front_sprite_texture.get_size().is_equal_approx(c.back_sprite_texture.get_size()):
-		assert(false, "Card (%s) front and back textures must be of same width and height" % path)
+		assert(false, "Card (%s) front and back textures must be of same width and height" % _path)
 	
 	return c
 

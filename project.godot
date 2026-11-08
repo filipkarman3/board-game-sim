@@ -21,7 +21,6 @@ SyncManager="*uid://dpiim8is0veq7"
 SyncDebugger="*uid://b5o4o7egu3y8s"
 NetworkHandler="*uid://cgfq7csorolxv"
 Helper="*uid://c2htnyvrmrsle"
-CollisionHelper="*uid://cgryvo22gojff"
 
 [display]
 

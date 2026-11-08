@@ -6,14 +6,14 @@ var colour: Color
 var bgsid: String
 
 func _init(
-		network_id: int,
-		username: String,
-		colour: Color,
-		bgsid: String):
-	self.network_id = network_id
-	self.username = username
-	self.colour = colour
-	self.bgsid = bgsid
+		_network_id: int,
+		_username: String,
+		_colour: Color,
+		_bgsid: String):
+	self.network_id = _network_id
+	self.username = _username
+	self.colour = _colour
+	self.bgsid = _bgsid
 
 func to_dictionary() -> Dictionary:
 	return {

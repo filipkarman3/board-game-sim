@@ -1,0 +1,24 @@
+on_new_player_connection
+detach_player_connection
+
+so with decks, we have set lock
+	easy - detects some collision w/a player if not currently locked
+	no need to handle in any way via networking
+
+unset lock 1 - area exited and not moving deck
+	deck move is dep on input
+		so it's state we need to save
+	then hitbox exited is just physics
+
+unset lock 2 - unset lock when moved away from player
+	so this happens when the user lets go of mouse move
+
+whilst we're at it, what input do we send?
+	start-move - deck, position
+		set is_moving
+	mid-move - deck, position
+		set position
+	end-move - deck, position
+		set is_moving, lock mayb
+
+also need network process to read all these

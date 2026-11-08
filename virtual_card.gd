@@ -1,10 +1,10 @@
 class_name VirtualCard extends Sprite2D
 
 const VIRTUAL_CARD_SCENE := preload("res://VirtualCard.tscn")
-static func create(ref: CardInfo) -> VirtualCard:
+static func create(_ref: CardInfo) -> VirtualCard:
 	var card := VIRTUAL_CARD_SCENE.instantiate()
-	card.texture = ref.front_sprite_texture
-	card.ref = ref
+	card.texture = _ref.front_sprite_texture
+	card.ref = _ref
 	return card
 
 var ref : CardInfo

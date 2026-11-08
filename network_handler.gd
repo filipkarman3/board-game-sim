@@ -4,6 +4,9 @@ const SERVER_ID = 1
 const LOBBY_SCREEN_SCENE = preload("res://LobbyScreen.tscn")
 const PLAYER_SCENE = preload("res://Player.tscn")
 
+const NETWORK_LOGGING: bool = true
+const LOG_FILE_DIR := 'user://detailed_logs'
+
 var peer : ENetMultiplayerPeer
 var lobby_screen : LobbyScreen
 # indexed by client id, returns username
@@ -69,7 +72,7 @@ func _start_lobby_screen() -> void:
 @rpc('any_peer')
 func on_new_peer_server(player_data_dict: Dictionary) -> void:
 	var player_data := PlayerData.from_dictionary(player_data_dict)
-	if player_data.username in self.players.values().map(func(p):p.username):
+	if player_data.username in self.players.values().map(func(p): return p.username):
 		_close_connection.rpc_id(player_data.network_id, "Username taken")
 		return
 	elif player_data.bgsid != Helper.bgsid:
@@ -123,10 +126,27 @@ func _close_connection(error_msg: String="") -> void:
 func _on_sync_manager_sync_started() -> void:
 	Helper.lobby_screen.hide()
 	Helper.start_game()
+	
+	if NETWORK_LOGGING:
+		if not DirAccess.dir_exists_absolute(LOG_FILE_DIR):
+			DirAccess.make_dir_recursive_absolute(LOG_FILE_DIR)
+		
+		var datetime = Time.get_datetime_dict_from_system(true)
+		var log_file_name = '%04d%02d%02d-%02d%02d%02d-peer-%d.log' % [
+			datetime['year'],
+			datetime['month'],
+			datetime['day'],
+			datetime['hour'],
+			datetime['minute'],
+			datetime['second'],
+			multiplayer.get_unique_id(),
+		]
+		SyncManager.start_logging(LOG_FILE_DIR + '/' + log_file_name)
 
 func _on_sync_manager_sync_stopped() -> void:
 	#lobby_screen.update_connection_status("Session stopped")
-	pass
+	if NETWORK_LOGGING:
+		SyncManager.stop_logging()
 
 func _on_sync_manager_sync_lost() -> void:
 	#lobby_screen.update_connection_status("Lost sync, waiting...")

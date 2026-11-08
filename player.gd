@@ -36,6 +36,12 @@ func _network_process(input: Dictionary) -> void:
 		if len(action) == 3:
 			var function_id: int = action[1]
 			var params: Array = action[2]
+			if Helper.network_object_tracker.get_obj(action[0]) == null:
+				print('------------------------------')
+				print(action[0])
+				print(action[1])
+				print(action[2])
+				print()
 			Helper.get_network_obj_by_id(action[0]).run_command(function_id, params)
 		else:
 			var static_f_id: int = action[0]

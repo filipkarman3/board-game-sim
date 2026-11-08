@@ -1,4 +1,4 @@
-extends Line2D
+class_name Stickman extends Line2D
 
 const STANCE_WIDTH : float = 40
 const LEAN_BACK : float    = 50

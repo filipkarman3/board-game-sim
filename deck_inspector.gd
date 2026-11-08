@@ -1,11 +1,11 @@
 class_name DeckInspector extends CanvasLayer
 
 const DECK_INSPECTOR_SCENE = preload("res://DeckInspector.tscn")
-static func create(deck: Deck) -> DeckInspector:
+static func create(_deck: Deck) -> DeckInspector:
 	var insp := DECK_INSPECTOR_SCENE.instantiate()
 	Helper.get_main().add_child(insp)
-	insp.deck = deck
-	for c in deck.cards:
+	insp.deck = _deck
+	for c in _deck.cards:
 		var vc: VirtualCard = VirtualCard.create(c)
 		insp.card_container.add_child(vc)
 		insp.cards.append(vc)
